@@ -1,5 +1,5 @@
 CoGCN:
-This is a algorithm implementation for 'CoGCN: Co-occurring Item-aware GCN for Recommendation'.
+This is an algorithm implementation for 'CoGCN: Co-occurring Item-aware GCN for Recommendation'.
 
 Environment Settings:
 Python 3.8 + Tensorflow 1.15.0
