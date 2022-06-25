@@ -4,9 +4,9 @@ from concurrent.futures import ProcessPoolExecutor
 from time import time
 import numpy
 import tensorflow as tf
-
 from iig_gcn import iig_gcn
 from utility.batch_test import test
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 tf.random.set_random_seed(1)
 numpy.random.seed(10)
@@ -18,10 +18,6 @@ cpu_num = multiprocessing.cpu_count()
 from utility.load_co_data import CoData
 from utility.parser import parse_args
 
-
-
-user_num = 50626
-item_num = 16882
 
 def init_embedding_for_entities():
     global_var.global_all_weights = {}
@@ -46,9 +42,14 @@ if __name__ == '__main__':
     global_var.data_generator = Data(path=global_var.args.data_path + global_var.args.dataset,
                                      batch_size=global_var.args.batch_size)
 
-    global_var.co_buy_data_generator = CoData('Data/' + global_var.args.dataset, 'item_co_buy_triple', 1024, 'item',
+    user_num = global_var.data_generator.n_users
+    item_num = global_var.data_generator.n_items
+
+    global_var.co_buy_data_generator = CoData('Data/' + global_var.args.dataset, 'item_co_buy_triple',
+                                              global_var.args.batch_size, 'item',
                                               'item', item_num, item_num)
-    global_var.co_view_data_generator = CoData('Data/' + global_var.args.dataset, 'item_co_view_triple', 1024, 'item',
+    global_var.co_view_data_generator = CoData('Data/' + global_var.args.dataset, 'item_co_view_triple',
+                                               global_var.args.batch_size, 'item',
                                                'item', item_num, item_num)
 
     n_batch = global_var.data_generator.n_train // global_var.args.batch_size + 1
@@ -64,10 +65,6 @@ if __name__ == '__main__':
     tf_config.gpu_options.allow_growth = True
     sess = tf.Session(config=tf_config)
 
-    cur_best_pre_0 = 0.
-    stopping_step = 0
-    should_stop = False
-
     init_embedding_for_entities()
     ####################################################
     config_side = dict()
@@ -82,7 +79,7 @@ if __name__ == '__main__':
     config_side['all_t_list'] = all_t_list
     config_side['all_v_list'] = all_v_list
     model_co_buy = iig_gcn(config_side, None, 'item', 'item',
-                             global_var.global_all_weights['item_embedding_in_co_buy'])
+                           global_var.global_all_weights['item_embedding_in_co_buy'])
 
     global_var.iig_embedding_buys = model_co_buy.iig_embeddings
 
@@ -98,8 +95,7 @@ if __name__ == '__main__':
     config_side['all_t_list'] = all_t_list
     config_side['all_v_list'] = all_v_list
     model_co_view = iig_gcn(config_side, None, 'item', 'item',
-                              global_var.global_all_weights['item_embedding_in_co_view'])
-
+                            global_var.global_all_weights['item_embedding_in_co_view'])
     global_var.iig_embedding_views = model_co_view.iig_embeddings
 
     config = dict()
@@ -107,7 +103,6 @@ if __name__ == '__main__':
     config['n_items'] = global_var.data_generator.n_items
     config['train_items'] = global_var.data_generator.train_items
     config['batch_size'] = global_var.data_generator.batch_size
-
     plain_adj, norm_adj, mean_adj = global_var.data_generator.get_adj_mat()
     config['norm_adj'] = norm_adj
     all_u_list, all_t_list, all_r_list, all_v_list = global_var.data_generator._get_all_data(norm_adj)
@@ -115,7 +110,6 @@ if __name__ == '__main__':
     config['all_r_list'] = all_r_list
     config['all_t_list'] = all_t_list
     config['all_v_list'] = all_v_list
-
     model = uig_gcn(config, None)
 
     ##########################################
@@ -149,9 +143,6 @@ if __name__ == '__main__':
 
         ####################################
 
-        ################################
-
-        ####################################
         if (epoch + 1) % 10 != 0:
             perf_str = 'Epoch %d [%.1fs]: train==[%.5f]' % (
                 epoch, time() - t1, loss_value)
